@@ -124,7 +124,7 @@ def fetch_drive_catalog(token):
     all_folders = []
     page_token = None
     while True:
-        q = f'"{DRIVE_ROOT_FOLDER_ID}" in parents and trashed = false'
+        q = f'"{DRIVE_ROOT_FOLDER_ID}" in parents and mimeType = "application/vnd.google-apps.folder" and trashed = false'
         url = f"https://www.googleapis.com/drive/v3/files?q={urllib.parse.quote(q)}&fields=nextPageToken,files(id,name,mimeType,size,modifiedTime)&pageSize=100"
         if page_token:
             url += f"&pageToken={page_token}"
@@ -508,6 +508,8 @@ def run_sync_cycle(force_regen=False, upload_drive=False):
         fol = item["folder"]["name"]
         parts = fol.split(" - ", 1)
         short_nrp = parts[0].strip()
+        if not (short_nrp.isdigit() or fol in bios):
+            continue
         name_from_fol = parts[1].strip() if len(parts) > 1 else fol
 
         bio = bios.get(fol, {})
