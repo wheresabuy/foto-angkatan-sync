@@ -611,7 +611,7 @@ def run_sync_cycle(force_regen=False, upload_drive=False):
 def main():
     parser = argparse.ArgumentParser(description="Auto Sync & Generator Pas Foto 3x4")
     parser.add_argument("--watch", action="store_true", help="Jalankan dalam mode pemantau background")
-    parser.add_argument("--interval", type=int, default=300, help="Interval pemantauan dalam detik (default: 300 detik / 5 menit)")
+    parser.add_argument("--interval", type=int, default=120, help="Interval pemantauan dalam detik (default: 120 detik / 2 menit)")
     parser.add_argument("--force-regen", action="store_true", help="Paksa regenerasi dokumen meskipun tidak ada foto baru")
     parser.add_argument("--upload-drive", action="store_true", help="Unggah dokumen PDF hasil regenerasi langsung ke Google Drive")
     args = parser.parse_args()

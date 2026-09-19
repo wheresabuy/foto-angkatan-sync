@@ -2,8 +2,8 @@ name: Auto Sync Pas Foto 3x4
 
 on:
   schedule:
-    # Berjalan otomatis setiap 30 menit
-    - cron: '*/30 * * * *'
+    # Berjalan otomatis setiap 5 menit (batas tercepat yang diizinkan GitHub Actions)
+    - cron: '*/5 * * * *'
   workflow_dispatch: # Tombol "Run workflow" manual dari GitHub Web / HP
   push:
     branches: [main]
