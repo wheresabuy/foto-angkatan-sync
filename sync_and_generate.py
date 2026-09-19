@@ -86,6 +86,7 @@ def get_access_token():
             pass
 
     if refresh_token and client_id and client_secret:
+        print("[AUTH] Menggunakan kredensial OAuth2 Environment Variables...")
         try:
             data = urllib.parse.urlencode({
                 "client_id": client_id,
@@ -100,9 +101,12 @@ def get_access_token():
             )
             with urllib.request.urlopen(req) as resp:
                 token_data = json.loads(resp.read().decode("utf-8"))
-                return token_data.get("access_token")
+                tok = token_data.get("access_token")
+                if tok:
+                    print("[AUTH] Berhasil mendapatkan Google Drive Access Token via OAuth2.")
+                    return tok
         except Exception as e:
-            print(f"[WARN] Refresh token OAuth2 gagal: {e}")
+            print(f"[AUTH ERROR] Gagal refresh token OAuth2: {e}")
 
     # 2. Fallback ke GNOME Online Accounts (Local DBus)
     cmd = [
@@ -112,12 +116,16 @@ def get_access_token():
     ]
     try:
         output = subprocess.check_output(cmd, stderr=subprocess.DEVNULL).decode()
-        return output.split("'")[1]
+        tok = output.split("'")[1]
+        if tok:
+            print("[AUTH] Berhasil mendapatkan token via GNOME Online Accounts.")
+            return tok
     except Exception:
         pass
 
-    print("[ERROR] Tidak dapat memperoleh access token Google Drive.")
-    return None
+    print("[FATAL] Tidak dapat memperoleh access token Google Drive.")
+    print("Pastikan GDRIVE_CLIENT_ID, GDRIVE_CLIENT_SECRET, dan GDRIVE_REFRESH_TOKEN sudah diisi di GitHub Secrets!")
+    sys.exit(1)
 
 def fetch_drive_catalog(token):
     """Mengambil seluruh daftar subfolder dan file di dalamnya dari Google Drive."""
