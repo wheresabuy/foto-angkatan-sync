@@ -11,7 +11,11 @@
 cd "$(dirname "$0")" || exit 1
 
 if [ "$1" == "--force" ]; then
-    python3 sync_and_generate.py --force-regen
+    python3 sync_and_generate.py --force-regen --upload-drive
+elif [ "$1" == "--watch" ]; then
+    shift
+    python3 sync_and_generate.py --watch --interval 60 --upload-drive "$@"
 else
-    python3 sync_and_generate.py "$@"
+    python3 sync_and_generate.py --upload-drive "$@"
 fi
+
