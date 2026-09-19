@@ -28,7 +28,7 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install --upgrade pip
-          pip install pillow reportlab python-docx
+          pip install -r requirements.txt
 
       - name: Run Sync & Auto-Upload to Google Drive
         env:
