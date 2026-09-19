@@ -340,8 +340,8 @@
     "full_nrp": "5024251049",
     "nama": "Sania Vita Dewi",
     "folder": "049 - Sania Vita Dewi",
-    "photo_file": null,
-    "has_photo": false
+    "photo_file": "IMG-20260919-WA0122.jpg",
+    "has_photo": true
   },
   {
     "short_nrp": "050",
@@ -420,7 +420,7 @@
     "full_nrp": "5024251060",
     "nama": "Nabilla Febriani",
     "folder": "060 - Nabilla Febriani",
-    "photo_file": "Screenshot_2026-09-19-16-45-08-91_e2d5b3f32b79de1d45acd1fad96fbb0f.jpg",
+    "photo_file": "IMG-20260919-WA0183.jpg",
     "has_photo": true
   },
   {
@@ -844,6 +844,22 @@
     "full_nrp": "5024251120",
     "nama": "Vincentius Johman Putra Jopeng",
     "folder": "120 - Vincentius Johman Putra Jopeng",
+    "photo_file": null,
+    "has_photo": false
+  },
+  {
+    "short_nrp": "Foto_3x4_Teman_Angkatan_Lengkap.pdf",
+    "full_nrp": "Foto_3x4_Teman_Angkatan_Lengkap.pdf",
+    "nama": "Foto_3X4_Teman_Angkatan_Lengkap.Pdf",
+    "folder": "Foto_3x4_Teman_Angkatan_Lengkap.pdf",
+    "photo_file": null,
+    "has_photo": false
+  },
+  {
+    "short_nrp": "Foto_3x4_Teman_Angkatan_Siap_Gunting.pdf",
+    "full_nrp": "Foto_3x4_Teman_Angkatan_Siap_Gunting.pdf",
+    "nama": "Foto_3X4_Teman_Angkatan_Siap_Gunting.Pdf",
+    "folder": "Foto_3x4_Teman_Angkatan_Siap_Gunting.pdf",
     "photo_file": null,
     "has_photo": false
   }
