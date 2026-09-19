@@ -618,10 +618,110 @@ def run_sync_cycle(force_regen=False, upload_drive=False):
         print(f"[{time.strftime('%H:%M:%S')}] Tidak ada foto baru. Dokumen sudah versi terbaru.")
         return False
 
+def get_start_page_token(token):
+    """Mengambil startPageToken untuk pemantauan perubahan instan via Changes API."""
+    try:
+        url = "https://www.googleapis.com/drive/v3/changes/startPageToken?supportsAllDrives=true"
+        req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
+        with urllib.request.urlopen(req) as resp:
+            return json.loads(resp.read().decode("utf-8")).get("startPageToken")
+    except Exception as e:
+        print(f"[WARN] Gagal mengambil startPageToken: {e}")
+        return None
+
+def check_for_changes(token, page_token):
+    """Memeriksa apakah ada file yang diunggah/diubah di Google Drive."""
+    try:
+        url = (
+            f"https://www.googleapis.com/drive/v3/changes?pageToken={page_token}"
+            f"&supportsAllDrives=true&includeItemsFromAllDrives=true&pageSize=50"
+            f"&fields=nextPageToken,newStartPageToken,changes(fileId,removed,file(id,name,mimeType,parents,trashed))"
+        )
+        req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
+        with urllib.request.urlopen(req) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        if e.code == 401:
+            print("[AUTH] Token kedaluwarsa, memperbarui token...")
+            new_tok = get_access_token()
+            return check_for_changes(new_tok, page_token)
+        print(f"[WARN] Gagal memeriksa changes (HTTP {e.code}): {e}")
+        return None
+    except Exception as e:
+        print(f"[WARN] Gagal memeriksa changes: {e}")
+        return None
+
+def watch_realtime(interval=5, upload_drive=True):
+    """Memantau Google Drive secara real-time (setiap 5 detik) menggunakan Changes API."""
+    print(f"[REALTIME] Mode pemantau instan aktif! Polling perubahan Google Drive setiap {interval} detik...")
+    token = get_access_token()
+    if not token:
+        print("[FATAL] Token Google Drive tidak tersedia.")
+        sys.exit(1)
+
+    # 1. Jalankan sinkronisasi awal
+    run_sync_cycle(upload_drive=upload_drive)
+    page_token = get_start_page_token(token)
+
+    last_full_scan = time.time()
+    FULL_SCAN_INTERVAL = 300  # Scan seluruh folder setiap 5 menit sebagai jaring pengaman
+
+    try:
+        while True:
+            time.sleep(interval)
+
+            # Periksa jika waktu full scan berkala tiba
+            if time.time() - last_full_scan > FULL_SCAN_INTERVAL:
+                run_sync_cycle(upload_drive=upload_drive)
+                last_full_scan = time.time()
+                token = get_access_token()
+                page_token = get_start_page_token(token)
+                continue
+
+            if not page_token:
+                token = get_access_token()
+                page_token = get_start_page_token(token)
+                continue
+
+            res = check_for_changes(token, page_token)
+            if not res:
+                continue
+
+            changes = res.get("changes", [])
+            new_page_token = res.get("newStartPageToken") or res.get("nextPageToken")
+            if new_page_token:
+                page_token = new_page_token
+
+            # Saring apakah perubahan ini relevan (bukan file PDF hasil generate sendiri)
+            has_relevant_change = False
+            for ch in changes:
+                f_info = ch.get("file")
+                if f_info:
+                    fname = f_info.get("name", "")
+                    # Abaikan file dokumen hasil generate sendiri agar tidak terjadi loop
+                    if fname.startswith("Foto_3x4_Teman_Angkatan_"):
+                        continue
+                    has_relevant_change = True
+                    print(f"[{time.strftime('%H:%M:%S')}] [INSTAN DETEKSI] Ada foto/file baru di Drive: '{fname}'")
+                    break
+                elif ch.get("removed"):
+                    has_relevant_change = True
+                    break
+
+            if has_relevant_change:
+                print(f"[{time.strftime('%H:%M:%S')}] [INSTAN PROSES] Memulai sinkronisasi dan generate PDF otomatis...")
+                run_sync_cycle(upload_drive=upload_drive)
+                last_full_scan = time.time()
+                # Refresh page_token setelah upload selesai
+                page_token = get_start_page_token(token)
+
+    except KeyboardInterrupt:
+        print("\n[REALTIME] Pemantau instan dihentikan.")
+
 def main():
     parser = argparse.ArgumentParser(description="Auto Sync & Generator Pas Foto 3x4")
-    parser.add_argument("--watch", action="store_true", help="Jalankan dalam mode pemantau background")
-    parser.add_argument("--interval", type=int, default=120, help="Interval pemantauan dalam detik (default: 120 detik / 2 menit)")
+    parser.add_argument("--watch", action="store_true", help="Jalankan dalam mode pemantau background real-time")
+    parser.add_argument("--interval", type=int, default=5, help="Interval pemantauan instan dalam detik (default: 5 detik)")
     parser.add_argument("--force-regen", action="store_true", help="Paksa regenerasi dokumen meskipun tidak ada foto baru")
     parser.add_argument("--upload-drive", action="store_true", help="Unggah dokumen PDF hasil regenerasi langsung ke Google Drive")
     args = parser.parse_args()
@@ -630,13 +730,7 @@ def main():
     os.makedirs(PROC_IMG_DIR, exist_ok=True)
 
     if args.watch:
-        print(f"[DAEMON] Mode pemantau aktif. Pengecekan setiap {args.interval} detik...")
-        try:
-            while True:
-                run_sync_cycle(force_regen=args.force_regen, upload_drive=args.upload_drive)
-                time.sleep(args.interval)
-        except KeyboardInterrupt:
-            print("\n[DAEMON] Pemantau dihentikan.")
+        watch_realtime(interval=args.interval, upload_drive=args.upload_drive)
     else:
         run_sync_cycle(force_regen=args.force_regen, upload_drive=args.upload_drive)
 

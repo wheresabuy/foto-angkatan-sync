@@ -14,7 +14,7 @@ if [ "$1" == "--force" ]; then
     python3 sync_and_generate.py --force-regen --upload-drive
 elif [ "$1" == "--watch" ]; then
     shift
-    python3 sync_and_generate.py --watch --interval 60 --upload-drive "$@"
+    python3 sync_and_generate.py --watch --interval 5 --upload-drive "$@"
 else
     python3 sync_and_generate.py --upload-drive "$@"
 fi
