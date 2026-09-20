@@ -254,8 +254,16 @@ def crop_and_frame_3x4(raw_path, out_path, short_nrp):
         im = Image.open(raw_path)
         im = ImageOps.exif_transpose(im).convert("RGB")
         
-        center_x = 0.75 if short_nrp == "060" else 0.5
-        im_crop = ImageOps.fit(im, (TARGET_W, TARGET_H), centering=(center_x, 0.42))
+        # Penyesuaian khusus orientasi dan framing wajah untuk NRP tertentu
+        if short_nrp == "113":
+            im = im.rotate(180)
+            center_x, center_y = 0.08, 0.40
+        elif short_nrp == "060":
+            center_x, center_y = 0.75, 0.42
+        else:
+            center_x, center_y = 0.5, 0.42
+
+        im_crop = ImageOps.fit(im, (TARGET_W, TARGET_H), centering=(center_x, center_y))
         
         draw = ImageDraw.Draw(im_crop)
         draw.rectangle([(0, 0), (TARGET_W - 1, TARGET_H - 1)], outline=(200, 200, 200), width=1)
