@@ -829,7 +829,7 @@ def watch_realtime(interval=5, upload_drive=True):
                 if f_info:
                     fname = f_info.get("name", "")
                     # Abaikan file dokumen hasil generate sendiri agar tidak terjadi loop
-                    if fname.startswith("Foto_3x4_Teman_Angkatan_"):
+                    if fname.startswith("Foto_3x4_Teman_Angkatan_") or fname.startswith("Foto_3x4_Grid_Canva_") or fname.startswith("PANDUAN_"):
                         continue
                     has_relevant_change = True
                     print(f"[{time.strftime('%H:%M:%S')}] [INSTAN DETEKSI] Ada foto/file baru di Drive: '{fname}'")
