@@ -41,7 +41,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/students_state.json data/processed_3x4/ Foto_3x4_Teman_Angkatan_Siap_Gunting.pdf Foto_3x4_Teman_Angkatan_Lengkap.pdf Foto_3x4_Teman_Angkatan_Siap_Gunting.docx Foto_3x4_Teman_Angkatan_Lengkap.docx
+          git add data/students_state.json data/processed_3x4/ Foto_3x4_Teman_Angkatan_Siap_Gunting.pdf Foto_3x4_Teman_Angkatan_Lengkap.pdf Foto_3x4_Teman_Angkatan_Siap_Gunting.docx Foto_3x4_Teman_Angkatan_Lengkap.docx Foto_3x4_Grid_Canva_Lengkap_106_Mahasiswa.pdf Foto_3x4_Grid_Canva_Lengkap_106_Dengan_Label.pdf Foto_3x4_Grid_Canva_Siap_Cetak_Polos.pdf Foto_3x4_Grid_Canva_Siap_Cetak_Dengan_Label.pdf
           if git diff --staged --quiet; then
             echo "No changes detected to commit."
           else

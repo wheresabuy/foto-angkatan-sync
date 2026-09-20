@@ -364,6 +364,86 @@ def generate_pdf_documents(students, output_path, title, subtitle):
 
     c.save()
 
+# ==================== CANVA 6x7 GRID GENERATOR ====================
+# Sesuai template ketua angkatan 'Salinan dari Cara Pakai QR Code!.pdf' (42 foto / halaman)
+CANVA_PAGE_W = 595.5
+CANVA_PAGE_H = 842.25
+CANVA_XS = [14.41, 101.17, 187.76, 274.52, 361.11, 447.87]
+CANVA_YS = [717.97, 600.97, 483.97, 366.97, 249.97, 132.97, 16.33]
+CANVA_FRAME_W = 79.09
+CANVA_FRAME_H = 108.00
+CANVA_COLS = 6
+CANVA_ROWS = 7
+CANVA_ITEMS_PER_PAGE = CANVA_COLS * CANVA_ROWS  # 42
+
+def generate_canva_grid_pdf(students, output_path, with_label=False):
+    """Menghasilkan dokumen PDF A4 dengan grid 6x7 (42 foto/halaman) sesuai template Canva ketua angkatan."""
+    c = canvas.Canvas(output_path, pagesize=(CANVA_PAGE_W, CANVA_PAGE_H))
+    total_items = len(students)
+    total_pages = (total_items + CANVA_ITEMS_PER_PAGE - 1) // CANVA_ITEMS_PER_PAGE
+
+    for page_idx in range(total_pages):
+        page_students = students[page_idx * CANVA_ITEMS_PER_PAGE : (page_idx + 1) * CANVA_ITEMS_PER_PAGE]
+
+        for idx, s in enumerate(page_students):
+            col = idx % CANVA_COLS
+            row = idx // CANVA_COLS
+            x = CANVA_XS[col]
+            y = CANVA_YS[row]
+
+            nrp = s.get("short_nrp") or str(s.get("nrp", ""))[-3:].zfill(3)
+            nama = s.get("nama", "")
+            img_path = os.path.join(PROC_IMG_DIR, f"{nrp}_3x4.jpg")
+            has_real_photo = s.get("has_photo", False) and os.path.exists(img_path)
+
+            if has_real_photo:
+                c.drawImage(img_path, x, y, width=CANVA_FRAME_W, height=CANVA_FRAME_H, preserveAspectRatio=False)
+
+                c.saveState()
+                c.setStrokeColor(colors.HexColor("#CBD5E1"))
+                c.setLineWidth(0.3)
+                c.rect(x, y, CANVA_FRAME_W, CANVA_FRAME_H, stroke=1, fill=0)
+                c.restoreState()
+
+                if with_label:
+                    c.saveState()
+                    c.setFillColor(colors.HexColor("#0F172A"))
+                    c.setFillAlpha(0.72)
+                    c.rect(x, y, CANVA_FRAME_W, 11.5, stroke=0, fill=1)
+                    c.setFillAlpha(1.0)
+                    c.setFillColor(colors.white)
+                    c.setFont("Helvetica-Bold", 5.5)
+                    short_name = nama.split()[0] if len(nama.split()) == 1 else " ".join(nama.split()[:2])
+                    if len(short_name) > 16:
+                        short_name = short_name[:14] + ".."
+                    c.drawCentredString(x + CANVA_FRAME_W / 2.0, y + 3.0, f"{nrp} - {short_name}")
+                    c.restoreState()
+            else:
+                c.saveState()
+                c.setFillColor(colors.HexColor("#F8FAFC"))
+                c.rect(x, y, CANVA_FRAME_W, CANVA_FRAME_H, stroke=0, fill=1)
+                c.setStrokeColor(colors.HexColor("#94A3B8"))
+                c.setLineWidth(0.6)
+                c.setDash(2, 2)
+                c.rect(x, y, CANVA_FRAME_W, CANVA_FRAME_H, stroke=1, fill=0)
+
+                c.setFont("Helvetica-Bold", 6.5)
+                c.setFillColor(colors.HexColor("#475569"))
+                c.drawCentredString(x + CANVA_FRAME_W / 2.0, y + CANVA_FRAME_H / 2.0 + 4, f"{nrp}")
+                c.setFont("Helvetica", 5.0)
+                c.setFillColor(colors.HexColor("#64748B"))
+                first_name = nama.split()[0] if nama else "-"
+                c.drawCentredString(x + CANVA_FRAME_W / 2.0, y + CANVA_FRAME_H / 2.0 - 5, first_name)
+                c.setFont("Helvetica-Oblique", 4.2)
+                c.setFillColor(colors.HexColor("#94A3B8"))
+                c.drawCentredString(x + CANVA_FRAME_W / 2.0, y + CANVA_FRAME_H / 2.0 - 13, "Belum Upload")
+                c.restoreState()
+
+        c.showPage()
+
+    c.save()
+    print(f"[OK] Selesai Canva Grid: {output_path} ({total_pages} halaman, {total_items} mahasiswa)")
+
 def generate_docx_documents(students, output_path, title_text, subtitle_text):
     """Menghasilkan dokumen Word .docx A4 dengan python-docx."""
     doc = docx.Document()
@@ -631,12 +711,29 @@ def run_sync_cycle(force_regen=False, upload_drive=False):
             "Urut Sesuai NRP  •  Kertas HVS A4 Siap Cetak (Lengkap 106 Mahasiswa)"
         )
 
+        # 2. Dokumen format template Canva 6x7 (42 foto / halaman)
+        pdf_canva_lengkap = os.path.join(BASE_DIR, "Foto_3x4_Grid_Canva_Lengkap_106_Mahasiswa.pdf")
+        generate_canva_grid_pdf(updated_students, pdf_canva_lengkap, with_label=False)
+
+        pdf_canva_lengkap_label = os.path.join(BASE_DIR, "Foto_3x4_Grid_Canva_Lengkap_106_Dengan_Label.pdf")
+        generate_canva_grid_pdf(updated_students, pdf_canva_lengkap_label, with_label=True)
+
+        pdf_canva_siap_polos = os.path.join(BASE_DIR, "Foto_3x4_Grid_Canva_Siap_Cetak_Polos.pdf")
+        generate_canva_grid_pdf(photos_only, pdf_canva_siap_polos, with_label=False)
+
+        pdf_canva_siap_label = os.path.join(BASE_DIR, "Foto_3x4_Grid_Canva_Siap_Cetak_Dengan_Label.pdf")
+        generate_canva_grid_pdf(photos_only, pdf_canva_siap_label, with_label=True)
+
         print("[SELESAI] Dokumen PDF & Word lokal berhasil diperbarui!")
 
         if upload_drive:
             print("[DRIVE] Mengunggah dokumen PDF terbaru ke Google Drive angkatan...")
             upload_file_to_drive(token, pdf_gunting, "Foto_3x4_Teman_Angkatan_Siap_Gunting.pdf", "application/pdf")
             upload_file_to_drive(token, pdf_lengkap, "Foto_3x4_Teman_Angkatan_Lengkap.pdf", "application/pdf")
+            upload_file_to_drive(token, pdf_canva_lengkap, "Foto_3x4_Grid_Canva_Lengkap_106_Mahasiswa.pdf", "application/pdf")
+            upload_file_to_drive(token, pdf_canva_lengkap_label, "Foto_3x4_Grid_Canva_Lengkap_106_Dengan_Label.pdf", "application/pdf")
+            upload_file_to_drive(token, pdf_canva_siap_polos, "Foto_3x4_Grid_Canva_Siap_Cetak_Polos.pdf", "application/pdf")
+            upload_file_to_drive(token, pdf_canva_siap_label, "Foto_3x4_Grid_Canva_Siap_Cetak_Dengan_Label.pdf", "application/pdf")
 
         if new_photos_count > 0:
             names_summary = ", ".join(newly_added_names[:3])
