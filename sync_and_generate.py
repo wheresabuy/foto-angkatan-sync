@@ -65,6 +65,10 @@ def get_access_token():
     2. Dari file lokal .env.github (jika ada).
     3. Dari GNOME Online Accounts via D-Bus session -> Cocok untuk laptop lokal.
     """
+    # Kredensial OAuth default (Google OAuth client GNOME Online Accounts)
+    DEFAULT_CLIENT_ID = "44438659992-7kgjeitenc16ssihbtdjbgguch7ju55s.apps.googleusercontent.com"
+    DEFAULT_CLIENT_SECRET = "-gMLuQyDiI0XrQS_vx_mhuYF"
+
     # 1. Cek Environment Variables atau .env.github
     refresh_token = os.environ.get("GDRIVE_REFRESH_TOKEN")
     client_id = os.environ.get("GDRIVE_CLIENT_ID")
@@ -85,26 +89,55 @@ def get_access_token():
         except Exception:
             pass
 
-    if refresh_token and client_id and client_secret:
+    # Sanitasi input (hapus spasi depan/belakang dan tanda kutip yang tidak sengaja tertempel)
+    if refresh_token:
+        refresh_token = refresh_token.strip().strip('"\'')
+    if client_id:
+        client_id = client_id.strip().strip('"\'')
+    else:
+        client_id = DEFAULT_CLIENT_ID
+    if client_secret:
+        client_secret = client_secret.strip().strip('"\'')
+    else:
+        client_secret = DEFAULT_CLIENT_SECRET
+
+    def _do_refresh(cid, csec, rtok):
+        data = urllib.parse.urlencode({
+            "client_id": cid,
+            "client_secret": csec,
+            "refresh_token": rtok,
+            "grant_type": "refresh_token"
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            "https://oauth2.googleapis.com/token",
+            data=data,
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        with urllib.request.urlopen(req) as resp:
+            token_data = json.loads(resp.read().decode("utf-8"))
+            return token_data.get("access_token")
+
+    if refresh_token:
         print("[AUTH] Menggunakan kredensial OAuth2 Environment Variables...")
+        # Percobaan 1: Menggunakan client_id & client_secret yang disediakan
         try:
-            data = urllib.parse.urlencode({
-                "client_id": client_id,
-                "client_secret": client_secret,
-                "refresh_token": refresh_token,
-                "grant_type": "refresh_token"
-            }).encode("utf-8")
-            req = urllib.request.Request(
-                "https://oauth2.googleapis.com/token",
-                data=data,
-                headers={"Content-Type": "application/x-www-form-urlencoded"}
-            )
-            with urllib.request.urlopen(req) as resp:
-                token_data = json.loads(resp.read().decode("utf-8"))
-                tok = token_data.get("access_token")
-                if tok:
-                    print("[AUTH] Berhasil mendapatkan Google Drive Access Token via OAuth2.")
-                    return tok
+            tok = _do_refresh(client_id, client_secret, refresh_token)
+            if tok:
+                print("[AUTH] Berhasil mendapatkan Google Drive Access Token via OAuth2.")
+                return tok
+        except urllib.error.HTTPError as e:
+            err_body = e.read().decode("utf-8", errors="replace")
+            print(f"[AUTH ERROR] Gagal refresh token OAuth2 (HTTP {e.code}): {err_body}")
+            # Jika kredensial yang dimasukkan gagal dan bukan default, coba dengan kredensial default
+            if client_id != DEFAULT_CLIENT_ID or client_secret != DEFAULT_CLIENT_SECRET:
+                print("[AUTH] Mencoba fallback dengan kredensial OAuth2 default...")
+                try:
+                    tok = _do_refresh(DEFAULT_CLIENT_ID, DEFAULT_CLIENT_SECRET, refresh_token)
+                    if tok:
+                        print("[AUTH] Berhasil mendapatkan token via kredensial default OAuth2.")
+                        return tok
+                except Exception as e2:
+                    print(f"[AUTH ERROR] Fallback kredensial default gagal: {e2}")
         except Exception as e:
             print(f"[AUTH ERROR] Gagal refresh token OAuth2: {e}")
 
